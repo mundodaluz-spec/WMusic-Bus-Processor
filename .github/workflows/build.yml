@@ -34,3 +34,26 @@ jobs:
             build/WMusicBusProcessor_artefacts/Release/VST3
             build/WMusicBusProcessor_artefacts/Release/AU
             build/WMusicBusProcessor_artefacts/Release/Standalone
+
+  # Copia os pacotes para o ramo "builds" (para baixar por git, sem passar pelos Artifacts)
+  publish:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: Enviar para o ramo builds
+        run: |
+          cd dist
+          for d in */; do n="${d%/}"; (cd "$n" && zip -qr "../$n.zip" .); rm -rf "$n"; done
+          echo "Pacotes do commit $GITHUB_SHA" > README.txt
+          git init -q -b builds
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A
+          git commit -qm "Build $GITHUB_SHA"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" builds
