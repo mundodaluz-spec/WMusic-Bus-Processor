@@ -1,0 +1,36 @@
+name: Build
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest, name: Windows }
+          - { os: macos-15,       name: macOS }
+          - { os: ubuntu-22.04,   name: Linux }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependencias (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libx11-dev libxext-dev libxrandr-dev libxinerama-dev libxcursor-dev libfreetype6-dev libfontconfig1-dev libgl1-mesa-dev
+      - name: Configurar
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Testes do motor
+        run: |
+          cmake --build build --config Release --target engine_tests
+          ${{ runner.os == 'Windows' && 'build\Release\engine_tests.exe' || './build/engine_tests' }}
+      - name: Compilar
+        run: cmake --build build --config Release --parallel
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WMusic-Bus-Processor-${{ matrix.name }}
+          path: |
+            build/WMusicBusProcessor_artefacts/Release/VST3
+            build/WMusicBusProcessor_artefacts/Release/AU
+            build/WMusicBusProcessor_artefacts/Release/Standalone
