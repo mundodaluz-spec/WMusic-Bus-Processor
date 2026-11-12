@@ -1,59 +1,79 @@
-// WMusic Bus Processor - tela (preto, creme e vermelho, no traco de pincel da logo WMusic).
+// WMusic Bus Processor - tela. O fundo e a arte aprovada (metal escovado); o plugin desenha
+// por cima so o que se mexe: knobs, valores, medidores, teclas e o nome do preset.
+// Todas as coordenadas sao pixels da arte (1619 x 971); a janela aplica a escala.
 #pragma once
 
 #include "PluginProcessor.h"
+#include "SkinLayout.h"
 
 namespace wmui
 {
-const juce::Colour kBlack  { 0xff000000 };
-const juce::Colour kPanel  { 0xff0b0b0b };
-const juce::Colour kCream  { 0xfff7efe3 };
-const juce::Colour kRed    { 0xffe0141c };
-const juce::Colour kGrey   { 0xff6b655d };
+const juce::Colour kCream  { 0xfff6eee2 };
+const juce::Colour kRed    { 0xffe8151d };
+const juce::Colour kInk    { 0xff141312 };
 
-constexpr int kBaseW = 1040, kBaseH = 620;
+constexpr int kBaseW = 1040, kBaseH = 624;      // tamanho 100% da janela
 
-void drawSwoosh (juce::Graphics&, float x1, float y1, float x2, float y2, float thickness, juce::Colour);
+struct Skin
+{
+    Skin();
+    juce::Image bg, knob, btnDark, btnCream, btnRed;
+    juce::Typeface::Ptr face;
+    juce::Font font (float height) const    { return juce::Font (juce::FontOptions (face).withHeight (height)); }
+};
 
 class Look : public juce::LookAndFeel_V4
 {
 public:
-    Look();
-    void drawRotarySlider (juce::Graphics&, int x, int y, int w, int h, float pos, float startAngle, float endAngle, juce::Slider&) override;
-    void drawButtonBackground (juce::Graphics&, juce::Button&, const juce::Colour&, bool highlighted, bool down) override;
-    void drawButtonText (juce::Graphics&, juce::TextButton&, bool highlighted, bool down) override;
-    juce::Font getTextButtonFont (juce::TextButton&, int) override    { return juce::Font (juce::FontOptions (12.5f, juce::Font::bold)); }
-    juce::Font getLabelFont (juce::Label& l) override                  { return l.getFont(); }
-    juce::Font getComboBoxFont (juce::ComboBox&) override              { return juce::Font (juce::FontOptions (14.0f, juce::Font::bold)); }
-    juce::Font getPopupMenuFont() override                             { return juce::Font (juce::FontOptions (14.0f)); }
-    void drawComboBox (juce::Graphics&, int w, int h, bool down, int, int, int, int, juce::ComboBox&) override;
+    explicit Look (const Skin&);
+    void drawComboBox (juce::Graphics&, int, int, bool, int, int, int, int, juce::ComboBox&) override {}
+    void positionComboBoxText (juce::ComboBox&, juce::Label&) override;
+    juce::Font getComboBoxFont (juce::ComboBox&) override     { return skin.font (25.0f); }
+    juce::Font getPopupMenuFont() override                    { return skin.font (25.0f); }
+    juce::Font getLabelFont (juce::Label& l) override         { return l.getFont(); }
+private:
+    const Skin& skin;
 };
 
-// knob + nome + valor digitavel
-class Knob : public juce::Component
+class SkinKnob : public juce::Slider
 {
 public:
-    Knob (juce::AudioProcessorValueTreeState&, const char* id, const juce::String& title, bool bipolar = false, bool accent = false);
-    void resized() override;
-    juce::Slider slider;
-    juce::Label title;
+    SkinKnob (const Skin&, juce::AudioProcessorValueTreeState&, const skin::KnobPos&, bool bipolar, bool accent);
+    void paint (juce::Graphics&) override;
+    bool hitTest (int x, int y) override;
+    void placeIn (juce::Component& parent);
+
+    juce::Label value;
+    juce::RangedAudioParameter& param;
+    const skin::KnobPos pos;
+    juce::String overrideText;      // texto fixo no lugar do valor (AUTO, divisao do sync)
+    void refreshText();
+
 private:
+    const Skin& skin;
+    const bool bipolar, accent;
     juce::AudioProcessorValueTreeState::SliderAttachment att;
 };
 
-class Toggle : public juce::TextButton
+class SkinButton : public juce::Button
 {
 public:
-    Toggle (juce::AudioProcessorValueTreeState&, const char* id, const juce::String& text, bool red = false);
+    SkinButton (const Skin&, juce::AudioProcessorValueTreeState&, const char* id, const juce::String& text, bool red = false);
+    void paintButton (juce::Graphics&, bool highlighted, bool down) override;
 private:
+    const Skin& skin;
+    const bool red;
     juce::AudioProcessorValueTreeState::ButtonAttachment att;
 };
 
 class Meter : public juce::Component
 {
 public:
+    explicit Meter (const Skin& s) : skin (s) { setInterceptsMouseClicks (false, false); }
     void paint (juce::Graphics&) override;
     float gr = 0.0f, grHold = 0.0f, drive = -120.0f;
+private:
+    const Skin& skin;
 };
 } // namespace wmui
 
@@ -71,34 +91,25 @@ private:
     struct Content : juce::Component
     {
         explicit Content (WMusicBusEditor& e) : owner (e) {}
-        void paint (juce::Graphics& g) override    { owner.paintContent (g); }
+        void paint (juce::Graphics& g) override;
         WMusicBusEditor& owner;
     };
 
-    void paintContent (juce::Graphics&);
     void timerCallback() override;
+    wmui::SkinKnob& knob (const char* id);
+    wmui::SkinButton& button (const char* id);
 
     WMusicBusProcessor& proc;
-    wmui::Look look;
+    wmui::Skin skin;
+    wmui::Look look { skin };
     Content content { *this };
-    juce::Image logo;
 
-    wmui::Meter meter;
+    wmui::Meter meter { skin };
     juce::ComboBox presetBox;
     juce::Label syncInfo;
-
-    // sidechain
-    wmui::Knob link, scHpf, scTilt;
-    wmui::Toggle extSc;
-    // compressor
-    wmui::Knob thresh, ratio, attack, release, knee, range, makeup, compMix;
-    wmui::Toggle autoRel, sync;
-    // saturador
-    wmui::Knob satAmount, satMix, satTone;
-    wmui::Toggle satTom, satHarm, satPre;
-    // espacial e saida
-    wmui::Knob air, width, monoBass, output;
-    wmui::Toggle spatOn, compOn, satOn;
+    juce::OwnedArray<wmui::SkinKnob> knobs;
+    juce::OwnedArray<wmui::SkinButton> buttons;
+    juce::StringArray buttonIds;
 
     int holdCount = 0;
     int lastProgram = -1;

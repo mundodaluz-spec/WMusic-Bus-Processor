@@ -45,7 +45,13 @@ juce_add_plugin(WMusicBusProcessor
     VST3_CATEGORIES Fx Dynamics
     AU_MAIN_TYPE kAudioUnitType_Effect)
 
-juce_add_binary_data(WMusicAssets SOURCES Assets/logo.png)
+juce_add_binary_data(WMusicAssets SOURCES
+    Assets/skin_bg.jpg
+    Assets/knob.png
+    Assets/btn_dark.png
+    Assets/btn_cream.png
+    Assets/btn_red.png
+    Assets/fonts/Inter-Medium.otf)
 
 target_sources(WMusicBusProcessor PRIVATE
     Source/PluginProcessor.cpp

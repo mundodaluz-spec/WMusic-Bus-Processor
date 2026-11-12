@@ -14,3 +14,8 @@ No Windows, copie a pasta `WMusic Bus Processor.vst3` para `C:\Program Files\Com
 ## Testes
     cmake --build build --target engine_tests && ./build/engine_tests     (motor, 48 testes)
     cmake --build build --target ui_snapshot                              (captura da tela)
+
+## Tela (skin)
+O fundo é a arte aprovada (`Assets/src/arte_aprovada.png`, 1619×971). `python3 Assets/make_skin.py` limpa a arte
+(tira ponteiros, arcos, valores e o medidor) e gera `skin_bg.jpg`, `knob.png`, `btn_*.png` e `Source/SkinLayout.h`.
+O plugin desenha por cima só o que se mexe. Fonte dos valores: Inter Medium (licença OFL, em `Assets/fonts`).

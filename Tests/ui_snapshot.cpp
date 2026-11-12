@@ -8,6 +8,12 @@ int main (int argc, char** argv)
     WMusicBusProcessor p;
     if (argc > 2) p.setCurrentProgram (juce::String (argv[2]).getIntValue());
     p.grMeter = 6.4f; p.driveMeter = -4.0f;
+    for (int i = 4; i < argc; ++i)      // extras: id=valor (valor real do parametro)
+    {
+        const auto kv = juce::StringArray::fromTokens (argv[i], "=", "");
+        if (auto* prm = p.apvts.getParameter (kv[0]))
+            prm->setValueNotifyingHost (prm->convertTo0to1 (kv[1].getFloatValue()));
+    }
     std::unique_ptr<juce::AudioProcessorEditor> ed (p.createEditor());
     const float scale = argc > 3 ? juce::String (argv[3]).getFloatValue() : 2.0f;
     auto img = ed->createComponentSnapshot (ed->getLocalBounds(), true, scale);
