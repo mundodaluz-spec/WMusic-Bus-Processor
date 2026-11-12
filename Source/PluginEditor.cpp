@@ -191,7 +191,7 @@ void SkinButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
     g.setImageResamplingQuality (juce::Graphics::highResamplingQuality);
     const bool on = getToggleState();
     const auto& img = on ? (red ? skin.btnRed : skin.btnCream) : skin.btnDark;
-    g.setOpacity (isEnabled() ? 1.0f : 0.45f);
+    g.setOpacity (1.0f);     // placa sempre opaca: cobre o texto da arte por baixo
     drawPlate (g, img, getLocalBounds().toFloat());
     if (down || (highlighted && ! on))
     {
@@ -205,7 +205,7 @@ void SkinButton::paintButton (juce::Graphics& g, bool highlighted, bool down)
         g.setColour (juce::Colours::black.withAlpha (0.45f));
         g.drawText (getButtonText(), text.translated (1, 2), juce::Justification::centred);
     }
-    g.setColour ((on && ! red ? kInk : kCream).withAlpha (isEnabled() ? 1.0f : 0.45f));
+    g.setColour ((on && ! red ? kInk : kCream).withAlpha (isEnabled() ? 1.0f : 0.35f));
     g.drawText (getButtonText(), text, juce::Justification::centred);
 }
 
